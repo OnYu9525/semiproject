@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="survey">
+	<insert id="add" parameterType="survo">
+		insert into survey values(survey_seq.nextVal,#{sub},#{code},sysdate)
+	</insert>
+	<insert id="addcontent" parameterType="java.util.List">
+		<selectKey keyProperty="id" resultType="int" order="BEFORE">
+			select survey_seq.currVal from dual
+		</selectKey>
+		<foreach collection="list" item="e" separator=" "
+			open="insert all" close="select * from dual">
+			into surveycontent values('${e.subtype}',#{id},'${e.surveytitle}',0)
+		</foreach>
+	</insert>
+
+	<!-- 
+		insert all 
+		into surveycontent VALUES('A',5,'예',0)
+		into surveycontent	VALUES('B',5,'아니오',0)
+		into surveycontent VALUES('C',5,'점심',0)
+		SELECT * FROM DUAL;
+	-->
+	
+	<select id="adminlist" resultType="survo" >
+	select  num ,sub ,code ,sdate,surveycnt from survey  ,
+		(SELECT SUBCODE,SUM(surveycnt) surveycnt FROM  surveycontent GROUP BY subcode)  where subcode=num   order by num desc
+	</select>
+	<select id="adminDetail" parameterType="int" resultType="surview2">
+		select s.num num,s.sub sub,s.code code, s.sdate sdate,sc.subtype subtype,sc.subcode subcode,sc.surveytitle surveytitle,sc.surveycnt surveycnt from survey s, surveycontent sc where s.num=sc.subcode and s.num=#{num} 
+	</select>
+	
+	<select id="surClient" resultType="surview2">
+		select num , sub, code , sdate ,subtype,surveytitle,surveycnt from survey ,surveycontent  where num=subcode and num=(select max(num) from survey) 
+	</select>
+	<update id="surUpdate" parameterType="surview2">
+		update surveycontent set surveycnt=surveycnt+1 where subcode=#{num}  AND subtype = #{subtype}
+	</update>
+	
+	
+	<delete id="surConDel" parameterType="int">
+		delete from surveycontent where subcode=#{num}
+	</delete>
+	<delete id="surDel" parameterType="int">
+		delete from survey where num=#{num}
+	</delete>
+</mapper>
